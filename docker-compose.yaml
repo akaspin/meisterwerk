@@ -1,0 +1,86 @@
+version: '3.4'
+services:
+  postgres:
+    image: postgres:15.4-bookworm
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - '5432:5432'
+    networks:
+      postgres: { }
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres -h localhost -p 5432" ]
+      interval: 1s
+      retries: 6
+      timeout: 1s
+      start_period: 30s
+    volumes:
+      - "./.docker/init.sql:/docker-entrypoint-initdb.d/meisterwerk-init.sql"
+
+  meisterwerk-db:
+    networks:
+      postgres: { }
+    depends_on:
+      postgres:
+        condition: service_healthy
+    image: arigaio/atlas
+    volumes:
+      - "./model/migrations:/migrations"
+    entrypoint: [ '/atlas', 'migrate', 'apply' ]
+    command: [ "--url", "postgres://postgres:postgres@postgres:5432/meisterwerk?sslmode=disable&search_path=public" ]
+
+  quotes:
+    image: meisterwerk-quotes:local
+    build:
+      context: .
+      dockerfile: .docker/app.dockerfile
+      ssh: [ "default" ]
+    depends_on:
+      postgres:
+        condition: service_healthy
+      meisterwerk-db:
+        condition: service_completed_successfully
+      orders:
+        condition: service_healthy
+    networks:
+      quotes: { }
+      postgres: { }
+      orders: { }
+    healthcheck:
+      test: [ "CMD", "/curl", "--fail", "localhost:8080/healthcheck" ]
+      interval: 1s
+      retries: 6
+      timeout: 1s
+      start_period: 30s
+    command: [
+      'meisterwerk',
+      '--db-host', 'postgres'
+    ]
+    ports:
+      - "8080:8080"
+
+  orders:
+    image: meisterwerk-orders:local
+    build:
+      context: .
+      dockerfile: .docker/orders-mock.dockerfile
+      ssh: [ "default" ]
+    networks:
+      orders: { }
+    healthcheck:
+      test: [ "CMD", "/curl", "--fail", "localhost:8080/healthcheck" ]
+      interval: 1s
+      retries: 6
+      timeout: 1s
+      start_period: 30s
+    command: [
+      'meisterwerk',
+    ]
+    ports:
+      - "8090:8080"
+
+networks:
+  quotes: { }
+  orders: { }
+  postgres: { }

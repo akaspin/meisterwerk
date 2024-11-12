@@ -1,0 +1,244 @@
+openapi: 3.1.0
+info:
+  title: Quotes API
+  description: API for quotes
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8080'
+    description: Local
+  - url: 'http://quotes:8080'
+    description: Integration
+paths:
+  /quotes:
+    post:
+      operationId: createQuote
+      summary: create quote
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quote'
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: int64
+                    description: ID of created quote
+    get:
+      operationId: listQuotes
+      summary: request multiple quotes
+      parameters:
+        - in: query
+          description: filter by quote ids
+          name: id
+          required: false
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: integer
+        - in: query
+          description: filter by customer_id
+          name: customer_id
+          required: false
+          style: form
+          explode: false
+          schema:
+            type: array
+            items:
+              type: integer
+        - in: query
+          description: limit results size
+          name: limit
+          required: false
+          schema:
+            type: integer
+        - in: query
+          description: skip results
+          name: skip
+          required: false
+          schema:
+            type: integer
+        - in: query
+          description: order
+          name: order
+          required: false
+          schema:
+            type: string
+            enum:
+              - asc
+              - desc
+      responses:
+        '200':
+          description: founded quotes
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Quote'
+  /quotes/{id}:
+    get:
+      operationId: getQuote
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID of the quote to retrieve
+      responses:
+        '200':
+          description: Quote found
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Quote'
+        '404':
+          description: Quote not found
+          content: { }
+    put:
+      operationId: updateQuote
+      summary: update quote
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID of the quote to update
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Quote'
+      responses:
+        '200':
+          description: Successful update
+          content: { }
+        '404':
+          description: Quote not found
+          content: { }
+    delete:
+      operationId: deleteQuote
+      summary: delete quote by id
+      parameters:
+        - in: path
+          name: id
+          schema:
+            type: integer
+          required: true
+          description: ID of the quote to delete
+      responses:
+        '200':
+          description: Quote deleted
+          content: { }
+        '404':
+          description: Quote not found
+          content: { }
+
+  /bulk/quotes:
+    post:
+      operationId: createQuotes
+      summary: create quotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Quote'
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/QuotesIDs'
+    put:
+      operationId: updateQuotes
+      summary: update quotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                $ref: '#/components/schemas/Quote'
+      responses:
+        '200':
+          description: Quotes updated
+          content: { }
+    delete:
+      operationId: deleteQuotes
+      summary: delete quotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/QuotesIDs'
+      responses:
+        '200':
+          description: Quotes deleted
+          content: { }
+components:
+  schemas:
+    Quote:
+      description: Quote
+      type: object
+      properties:
+        id:
+          type: int64
+          description: Quote ID
+        customer_id:
+          type: int64
+          description: Customer ID
+        description:
+          type: string
+          description: Quote description
+        status:
+          type: string
+          enum: [ pending, accepted, rejected ]
+          description: Quote status
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Item'
+      required:
+        - customer_id
+        - description
+    Item:
+      description: Quote item
+      type: object
+      properties:
+        id:
+          type: string
+        segment:
+          type: string
+          enum: [ product, service ]
+        price:
+          type: float
+        tax:
+          type: float
+      required:
+        - id
+        - segment
+    QuotesIDs:
+      description: Quote IDs
+      type: object
+      properties:
+        ids:
+          type: array
+          items:
+            type: int64

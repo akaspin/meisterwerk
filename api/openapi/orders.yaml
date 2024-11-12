@@ -1,0 +1,39 @@
+openapi: 3.1.0
+info:
+  title: Mock Orders API
+  version: 1.0.0
+servers:
+  - url: 'http://localhost:8090'
+    description: Local
+  - url: 'http://orders:8080'
+    description: Integration
+paths:
+  /quotes:
+    post:
+      operationId: reportQuotes
+      summary: Mock endpoint to report about accepted quotes
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: array
+              items:
+                type: int64
+      responses:
+        '201':
+          description: success
+          content: { }
+    get:
+      operationId: getQuotes
+      summary: Mock endpoint to retrieve ids of accepted quotes
+      responses:
+        '201':
+          description: success
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: int64
+
